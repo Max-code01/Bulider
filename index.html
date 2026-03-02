@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bridge Physic Pro</title>
+    <style>
+        body { margin: 0; background-color: #050a1a; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }
+        canvas { border: 2px solid #00ffd6; display: block; cursor: crosshair; }
+        
+        /* --- UI-Elemente --- */
+        #toolbar { position: absolute; top: 10px; left: 10px; display: flex; flex-wrap: wrap; gap: 8px; z-index: 1000; background: rgba(0, 0, 0, 0.7); padding: 10px; border-radius: 5px; }
+        #toolbar button, #toolbar select { padding: 8px 12px; border: none; border-radius: 4px; background-color: #00bfff; color: white; cursor: pointer; transition: background-color 0.2s; }
+        #toolbar button:hover { background-color: #0099cc; }
+        #toolbar .constraint-types button { background-color: #ffbb00; }
+        #toolbar .constraint-types button:hover { background-color: #cc9900; }
+        
+        #info-bar { position: absolute; top: 10px; right: 10px; color: #fff; font-size: 14px; background: rgba(0, 0, 0, 0.7); padding: 10px; border-radius: 5px; z-index: 1000; }
+        #mode-text { font-weight: bold; color: #00ff77; }
+        
+        /* --- Slider-Overlay (Neue Anforderung) --- */
+        #settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none; /* Steuerung per JS */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        #settings-content {
+            background: #111;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 214, 0.5);
+            width: 80%; /* Groß über den Bildschirm */
+            max-width: 600px;
+        }
+        .slider-group {
+            margin-bottom: 20px;
+            color: #00ffd6;
+        }
+        .slider-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .slider-group input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: #333;
+            border-radius: 5px;
+            -webkit-appearance: none;
+            margin-top: 5px;
+        }
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #00ffd6;
+            cursor: pointer;
+        }
+        #settings-close {
+            background-color: #ff6666;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        
+        /* --- Editor Controls --- */
+        #editor-controls { display: none; margin-top: 10px; }
+        #editor-controls button { background-color: #ff00ff; }
+        #editor-controls button:hover { background-color: #cc00cc; }
+        
+        /* --- Context Menu (Rechtsklick Löschen) --- */
+        #context-menu {
+            position: absolute;
+            background: #222;
+            border: 1px solid #00ffd6;
+            border-radius: 4px;
+            padding: 5px;
+            z-index: 3000;
+            display: none;
+        }
+        #context-menu button {
+            display: block;
+            width: 100%;
+            padding: 5px 10px;
+            background: none;
+            border: none;
+            color: #ff6666;
+            text-align: left;
+            cursor: pointer;
+        }
+        #context-menu button:hover {
+            background: #333;
+        }
+
+        /* --- Message Box --- */
+        #msg-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #111;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+            color: white;
+            z-index: 3000;
+            text-align: center;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <canvas id="game-canvas"></canvas>
+
+    <div id="toolbar">
+        <button id="btn-play">Start</button>
+        <button id="btn-build">Bauen</button>
+        <button id="btn-edit">Pin</button>
+        <button id="btn-editor">Editor</button>
+        <div class="constraint-types">
+            <button id="btn-type-rigid">Starr</button>
+            <button id="btn-type-cable">Seil</button>
+            <button id="btn-type-rod">Stange</button>
+        </div>
+        <button id="btn-wind">Wind</button>
+        <button id="btn-explosion">Explosion</button>
+        <button id="btn-paint">Farbe</button>
+        <button id="btn-bag">Tragkraft</button>
+        <button id="btn-chaos">Chaos💥</button>
+
+        <button id="btn-undo">Undo</button>
+        <button id="btn-redo">Redo</button>
+        <button id="btn-clear">Löschen</button>
+        <button id="btn-save">Speichern</button>
+        <button id="btn-load">Laden</button>
+        <button id="btn-export">Export</button>
+        <button id="btn-import">Import</button>
+        <button id="btn-sandbox">Sandbox</button>
+        <button id="btn-goal">Goal Level</button>
+        
+        <select id="theme-select">
+            <option value="neon">Neon (Dunkel)</option>
+            <option value="night">Nacht</option>
+            <option value="ice">Eis (Hell)</option>
+            <option value="forest">Wald (Neu)</option>
+            <option value="classic">Klassisch</option>
+        </select>
+        
+        <div id="editor-controls">
+            <button id="btn-editor-move">Verschieben</button>
+            <button id="btn-editor-platform">Plattform</button>
+            <button id="btn-editor-goal">Ziel setzen</button>
+            <button id="btn-editor-delete">Löschen</button>
+        </div>
+        
+        <button id="btn-settings">Einstellungen (Slider)</button>
+
+        <button id="btn-debug-fps">FPS</button>
+        <button id="btn-debug-bounds">Bounds</button>
+        <button id="btn-debug-forces">Kräfte</button>
+        <button id="btn-debug-energy">Energie</button>
+    </div>
+
+    <div id="info-bar">
+        <div id="mode-text">Modus: Bauen</div>
+        <div id="node-count">Knoten: 0</div>
+    </div>
+    
+    <div id="settings-overlay" class="hidden">
+        <div id="settings-content">
+            <h2>⚙️ Systemeinstellungen</h2>
+            <div class="slider-group">
+                <label for="slider-gravity">Schwerkraft: <span id="val-gravity">1600</span></label>
+                <input type="range" id="slider-gravity" min="0" max="3000" step="50" value="1600">
+            </div>
+            <div class="slider-group">
+                <label for="slider-substeps">Physik-Substeps: <span id="val-substeps">4</span></label>
+                <input type="range" id="slider-substeps" min="1" max="10" step="1" value="4">
+            </div>
+            <div class="slider-group">
+                <label for="slider-constraint-passes">Constraint-Passes: <span id="val-constraint-passes">6</span></label>
+                <input type="range" id="slider-constraint-passes" min="1" max="12" step="1" value="6">
+            </div>
+            <div class="slider-group">
+                <label for="slider-break-threshold">Bruch-Empfindlichkeit (Basis): <span id="val-break-threshold">180</span></label>
+                <input type="range" id="slider-break-threshold" min="50" max="500" step="10" value="180">
+            </div>
+            <button id="settings-close">Schließen</button>
+        </div>
+    </div>
+
+    <div id="context-menu">
+        <button id="ctx-delete-element">Element löschen</button>
+    </div>
+
+    <div id="msg-box" class="hidden">
+        <h3 id="msg-title"></h3>
+        <p id="msg-text"></p>
+        <button id="msg-ok">OK</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
