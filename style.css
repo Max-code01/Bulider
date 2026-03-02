@@ -1,0 +1,52 @@
+/* Bridge Physic Pro CSS - Verbesserte Version 7 (Debugging-Buttons hinzugefügt) */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#071026;font-family:Inter,Arial,Helvetica,sans-serif;color:#e6faff}
+
+/* --- UI Top --- */
+#ui-top{
+    position:fixed;left:50%;transform:translateX(-50%);
+    top:8px;z-index:999;
+    display:flex;align-items:center;gap:8px; 
+    padding:8px 12px;
+    background:rgba(255,255,255,0.03); 
+    border-radius:10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+#title{font-size:20px;margin-right:10px;color:#00ffd6;text-shadow: 0 0 5px rgba(0, 255, 214, 0.5);}
+#controls{display:flex;gap:6px;align-items: center;flex-wrap: wrap;} 
+
+/* --- Buttons --- */
+#controls button, #controls select{
+    padding:7px 10px;
+    border-radius:6px;
+    border:1px solid rgba(0, 255, 214, 0.3);
+    background:rgba(255,255,255,0.06); 
+    color:#fff;
+    cursor:pointer;
+    transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+    font-size: 14px;
+    white-space: nowrap; 
+}
+#controls button:hover {
+    background: rgba(0, 255, 214, 0.15);
+    box-shadow: 0 0 5px rgba(0, 255, 214, 0.3);
+}
+#controls button:active {
+    background: rgba(0, 255, 214, 0.25);
+}
+
+/* Spezielle Farben für Debug-Buttons */
+#btn-debug-fps, #btn-debug-bounds, #btn-debug-forces, #btn-debug-energy {
+    border-color: #ff00ff; /* Magenta */
+    color: #ff00ff;
+}
+#btn-debug-fps:hover, #btn-debug-bounds:hover, #btn-debug-forces:hover, #btn-debug-energy:hover {
+    background: rgba(255, 0, 255, 0.15);
+}
+
+/* NEU: Spezielle Farben für Constraint-Typen */
+#btn-type-cable { border-color: #ffbb00; color: #ffbb00; }
+#btn-type-rod { border-color: #00bfff; color: #00bfff; }
+#btn-type-rigid { border-color: #00ffd6; } 
+
+/* ... (Rest der CSS-Regeln für Editor, Canvas, Mobile Media Queries) ... */
